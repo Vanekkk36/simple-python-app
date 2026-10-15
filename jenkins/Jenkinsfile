@@ -1,23 +1,42 @@
 pipeline {
-    // Агент (agent) указывает, где будет выполняться pipeline.
-    // 'any' - означает запуск на любом доступном агенте.
-    agent {
-        docker { image 'dh-mirror.gitverse.ru/python:3.13.7-alpine3.22' }
-        }
+    agent any
 
-    // Блок stages содержит последовательность этапов выполнения.
     stages {
-        // Stage 1 - первый этап pipeline
-        stage('Build') {
-            // Блок steps содержит конкретные действия/команды
+        stage('Setup dependencies') {
             steps {
-            // открываем виртуальное окружение для Python, это нужно чтобы был доступ сохранить зависимости из файла requirements.txt
-                sh '''
-                python -m venv venv
-                . venv/bin/activate 
-                pip install -r requirements.txt
-                '''
+                bat 'python --version'
+                bat 'python -m pip install -r requirements.txt'
             }
         }
+
+        stage('Compile') {
+            steps {
+                bat 'python -m compileall -q sources'
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                bat 'if not exist reports mkdir reports'
+                bat 'python -m pip install pytest'
+                bat 'python -m pytest sources --junitxml=reports/junit.xml'
+            }
+            post {
+                always {
+                    junit 'reports/junit.xml'
+                }
+            }
+        }
+
+        stage('Archive artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'sources/**/*.py, reports/junit.xml',
+                                 allowEmptyArchive: false
+            }
+        }
+    }
+
+    options {
+        skipStagesAfterUnstable()
     }
 }
