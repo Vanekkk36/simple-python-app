@@ -1,29 +1,33 @@
 pipeline {
     agent any
 
+    options {
+        skipStagesAfterUnstable()
+    }
+
     stages {
         stage('Setup dependencies') {
             steps {
-                bat 'python --version'
-                bat 'python -m pip install -r requirements.txt'
+                bat '"C:\\Users\\ivanz\\AppData\\Local\\Python\\bin\\python.exe" --version'
+                bat '"C:\\Users\\ivanz\\AppData\\Local\\Python\\bin\\python.exe" -m pip install -r requirements.txt'
+                bat '"C:\\Users\\ivanz\\AppData\\Local\\Python\\bin\\python.exe" -m pip install pytest'
             }
         }
 
         stage('Compile') {
             steps {
-                bat 'python -m compileall -q sources'
+                bat '"C:\\Users\\ivanz\\AppData\\Local\\Python\\bin\\python.exe" -m compileall -q sources'
             }
         }
 
         stage('Tests') {
             steps {
                 bat 'if not exist reports mkdir reports'
-                bat 'python -m pip install pytest'
-                bat 'python -m pytest sources --junitxml=reports/junit.xml'
+                bat '"C:\\Users\\ivanz\\AppData\\Local\\Python\\bin\\python.exe" -m pytest sources --junitxml=reports/junit.xml'
             }
             post {
                 always {
-                    junit 'reports/junit.xml'
+                    junit testResults: 'reports/junit.xml', allowEmptyResults: true
                 }
             }
         }
@@ -34,9 +38,5 @@ pipeline {
                                  allowEmptyArchive: false
             }
         }
-    }
-
-    options {
-        skipStagesAfterUnstable()
     }
 }
